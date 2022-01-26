@@ -120,6 +120,9 @@ class EasyWidget:
         if "select_mode" in locals_dict and locals_dict["select_mode"] is not None:
             self.select_mode = locals_dict["select_mode"]
 
+        if "type" in locals_dict and locals_dict["type"] is not None:
+            self.type = locals_dict["type"]
+
 
     def file_chosen(self, entry_box, type, initialdir, filetypes, string_var=None):
 
@@ -362,7 +365,6 @@ class EasyTable(EasyWidget):
         EasyWidget.__init__(self)
         self.assign_values(EasyDialogue, locals())
 
-        #TODO: refactoring mit assign_values-Methode
         if not isinstance(values, dict):
             raise ValueError("\n\nValues must be given as a dictionary. Current type: {}".format(type(values)))
 
@@ -374,7 +376,7 @@ class EasyTable(EasyWidget):
                 len_list.append(1)
         number_of_columns = max(len_list)
 
-        self.grid_object = tk.Frame(frame, width=width, height=height, background=EasyDialogue.background_color)
+        self.grid_object = tk.Frame(self.frame, width=width, height=height, background=EasyDialogue.background_color)
         table_frame = tk.Frame(self.grid_object, width=width, height=height, background=EasyDialogue.background_color)
         # self.object = ttk.Treeview(self.grid_object, selectmode="browse")
         self.object = ttk.Treeview(table_frame, selectmode="browse")
@@ -433,7 +435,7 @@ class EasyTable(EasyWidget):
         hsb.grid(row=1, column=0, columnspan=1, padx=0, sticky=self.sticky)
         self.grid_object.grid_propagate(True)
 
-        self.insert_into_grid(self.grid_object, frame, row, column, columnspan)
+        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
         if not add_to_grid:
             self.remove_from_grid()
 
