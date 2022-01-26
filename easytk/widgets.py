@@ -35,7 +35,7 @@ def default_settings(object):
     object.fontcolor = "black"
     object.fontsize = 10
     object.height = 30
-    object.width = 400
+    object.width = 600
     object.padx = 5
     object.pady = 5
     object.relief = "solid"
@@ -58,12 +58,14 @@ class EasyWidget:
         default_settings(self)
         self.focus=True
 
+
     def assign_values(self, EasyDialogue, locals_dict):
-        """Assigns default values to an EasyWidget.
-        
-        Arguments:
-         - [EasyDialogue] EasyDialogue
-         - [dict] locals_dict
+        """
+            Assigns default values to an EasyWidget.
+            
+            Arguments:
+            - [EasyDialogue] EasyDialogue
+            - [dict] locals_dict
         """
         
         self.EasyDialogue = EasyDialogue
@@ -72,8 +74,22 @@ class EasyWidget:
         self.column = locals_dict["column"]
         self.columnspan = locals_dict["columnspan"]
 
+        if "frame" not in locals_dict or locals_dict["frame"] is None:
+            self.frame = EasyDialogue.main_frame
+        else:
+            frame = locals_dict["frame"]
+            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
+                frame = frame.object
+                self.frame = frame
+            else:
+                self.frame = frame
+
         if "width" not in locals_dict or locals_dict["width"] is None:
-            self.width = EasyDialogue.width * locals_dict["columnspan"]
+            if not ".!frame" in self.frame.winfo_parent():
+                self.width = EasyDialogue.width * self.columnspan
+            else:
+                self.width = self.frame.winfo_reqwidth()
+
         else:
             self.width = locals_dict["width"]
 
@@ -96,16 +112,6 @@ class EasyWidget:
             else:
                 self.label_width = locals_dict["label_width"]
 
-        if "frame" not in locals_dict or locals_dict["frame"] is None:
-            self.frame = EasyDialogue.main_frame
-        else:
-            frame = locals_dict["frame"]
-            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
-                frame = frame.object
-                self.frame = frame
-            else:
-                self.frame = frame
-
         if "focus" not in locals_dict or locals_dict["focus"] is None:
             self.focus = False
         else:
@@ -127,7 +133,7 @@ class EasyWidget:
         if filetypes is None:
             filetypes = ()
 
-        if len(filetypes) > 0:#
+        if len(filetypes) > 0:
             if not isinstance(filetypes[0], tuple):
                 filetypes_list = [filetypes]
             else:
@@ -179,9 +185,11 @@ class EasyWidget:
         else:
             _RETURN_BUTTONS_EXIST = False
 
+         
+
         if row is None:
             object.grid(row=frame.grid_size()[1], column=column, columnspan=columnspan, sticky=self.sticky, padx=self.padx, pady=self.pady)
-        elif type(row) == int:
+        elif isinstance(row, int):
             object.grid(row=row, column=column, columnspan=columnspan, sticky=self.sticky, padx=self.padx, pady=self.pady)
         else:
             raise ValueError("Row must be integer or None!")
@@ -200,28 +208,7 @@ class EasyButton(EasyWidget):
     def __init__(self, EasyDialogue, text=None, command=None, focus=False, width=None, height=None, row=None, column=0, columnspan=1, fill_frame=True, frame=None, add_to_grid=True):
 
         EasyWidget.__init__(self)
-        self.EasyDialogue = EasyDialogue
-
-        if width is None:
-            self.width = EasyDialogue.width * columnspan
-        else:
-            self.width = width
-
-        if height is not None:
-            self.height = height
-
-        self.row = row
-        self.column = column
-        self.columnspan = columnspan
-
-        if frame is None:
-            self.frame = EasyDialogue.main_frame
-        else:
-            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
-                frame = frame.object
-                self.frame = frame
-            else:
-                self.frame = frame
+        self.assign_values(EasyDialogue, locals())
 
         if text is None:
             raise ValueError("\n\nKeyword argument 'text' has to be set.\n")
@@ -239,37 +226,13 @@ class EasyButton(EasyWidget):
         if focus == True:
             self.grid_object.focus_set()
 
-    #TODO: Remove methods
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
-
 
 class EasyFrame(EasyWidget):
 
     def __init__(self, EasyDialogue, width=None, height=None, row=None, column=0, columnspan=1, frame=None, add_to_grid=True):
 
         EasyWidget.__init__(self)
-        self.EasyDialogue = EasyDialogue
-
-        if width is None:
-            self.width = EasyDialogue.width * columnspan
-        else:
-            self.width = width
-
-        if height is not None:
-            self.height = height
-
-        self.row = row
-        self.column = column
-        self.columnspan = columnspan
-
-        if frame is None:
-            self.frame = EasyDialogue.main_frame
-        else:
-            self.frame = frame
+        self.assign_values(EasyDialogue, locals())
 
         self.grid_object = tkinter.Frame(self.frame, background=EasyDialogue.background_color)
         self.object = tkinter.Frame(self.grid_object, width=self.width, height=self.height, background=EasyDialogue.background_color)
@@ -281,26 +244,16 @@ class EasyFrame(EasyWidget):
         if add_to_grid == False:
             self.remove_from_grid()
 
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
-
 
 class EasyLabelFrame(EasyWidget):
 
-    def __init__(self, EasyDialogue, text=None, width=None, height=None, row=None, column=0, columnspan=1, frame=None, add_to_grid=True):
+    def __init__(self, EasyDialogue, text, width=None, height=None, row=None, column=0, columnspan=1, frame=None, add_to_grid=True):
 
         EasyWidget.__init__(self)
         self.assign_values(EasyDialogue, locals())
 
-        if text is None:
-            raise ValueError("Keyword argument 'text' must be set!")
-
-
         self.grid_object = tkinter.Frame(self.frame, background=EasyDialogue.background_color)
-        self.object = tkinter.LabelFrame(self.grid_object, text=text, font=(EasyDialogue.font, EasyDialogue.fontsize-2), background=EasyDialogue.background_color)
+        self.object = tkinter.LabelFrame(self.grid_object, text=text, width=self.width, height=self.height, font=(EasyDialogue.font, EasyDialogue.fontsize-2), background=EasyDialogue.background_color)
         self.object.pack(side="left", fill="both", expand=True, padx=0)
         self.grid_object.pack_propagate(True)
         self.object.grid_propagate(True)
@@ -309,58 +262,15 @@ class EasyLabelFrame(EasyWidget):
         if add_to_grid == False:
             self.remove_from_grid()
 
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
-
 
 class EasyTitle(EasyWidget):
 
-    def __init__(self, EasyDialogue, text=None, width=None, height=None, row=None, column=0, columnspan=1, frame=None, anchor=None, justify=None, add_to_grid=True):
+    def __init__(self, EasyDialogue, text:str, width=None, height=None, row=None, column=0, columnspan=1, frame=None, anchor=None, justify=None, add_to_grid=True):
 
         EasyWidget.__init__(self)
-        self.EasyDialogue = EasyDialogue
-
-        if text is None:
-            raise ValueError("Keyword argument 'text' must be set!")
-
-        if width is None:
-            self.width = EasyDialogue.width * columnspan
-        else:
-            self.width = width
-
-        if height is not None:
-            self.height = height
+        self.assign_values(EasyDialogue, locals())
 
         self.number_of_lines = len(text.split("\n"))
-
-        if height is not None:
-            self.height = height
-
-        if anchor is None:
-            self.anchor = "w"
-        else:
-            self.anchor = anchor
-
-        self.row = row
-        self.column = column
-        self.columnspan = columnspan
-
-        if justify is None:
-            self.justify = "left"
-        else:
-            self.justify = justify
-
-        if frame is None:
-            self.frame = EasyDialogue.main_frame
-        else:
-            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
-                frame = frame.object
-                self.frame = frame
-            else:
-                self.frame = frame
 
         self.grid_object = tkinter.Frame(self.frame, width=self.width, height=self.height*self.number_of_lines, background=EasyDialogue.background_color)
         self.object = tkinter.Label(self.grid_object, height=self.number_of_lines, text=text, font=(EasyDialogue.font, EasyDialogue.fontsize), background=self.background_color, anchor=self.anchor, justify=self.justify, width=self.width, padx=0)
@@ -371,12 +281,6 @@ class EasyTitle(EasyWidget):
         self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
         if add_to_grid == False:
             self.remove_from_grid()
-
-    def add_to_grid(self):
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self):
-        self.grid_object.grid_remove()
 
 
 class EasyListbox(EasyWidget):
@@ -456,7 +360,7 @@ class EasyTable(EasyWidget):
     def __init__(self, EasyDialogue, values, headings=None, columnwidths=None, width=None, height=None, row=None, column=0, columnspan=1, frame=None, add_to_grid=True):
 
         EasyWidget.__init__(self)
-        self.EasyDialogue = EasyDialogue
+        self.assign_values(EasyDialogue, locals())
 
         #TODO: refactoring mit assign_values-Methode
         if not isinstance(values, dict):
@@ -469,21 +373,6 @@ class EasyTable(EasyWidget):
             else:
                 len_list.append(1)
         number_of_columns = max(len_list)
-
-        if frame is None:
-            frame = EasyDialogue.main_frame
-        else:
-            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
-                frame = frame.object
-                self.frame = frame
-            else:
-                self.frame = frame
-
-        if width is None:
-            width = EasyDialogue.width * columnspan
-
-        if height is None:
-            height = self.height
 
         self.grid_object = tk.Frame(frame, width=width, height=height, background=EasyDialogue.background_color)
         table_frame = tk.Frame(self.grid_object, width=width, height=height, background=EasyDialogue.background_color)
@@ -554,42 +443,10 @@ class EasyLabel(EasyWidget):
     def __init__(self, EasyDialogue, text=None, width=None, height=None, row=None, column=0, columnspan=1, frame=None, anchor=None, justify=None, add_to_grid=True):
 
         EasyWidget.__init__(self)
-        self.EasyDialogue = EasyDialogue
+        self.assign_values(EasyDialogue, locals())
 
-        #TODO: refactoring mit assign_values-Methode
         if text is None:
             raise ValueError("Keyword argument 'text' must be set!")
-
-        if width is None:
-            self.width = EasyDialogue.width * columnspan
-        else:
-            self.width = width
-
-        if height is not None:
-            self.height = height
-
-        if anchor is None:
-            self.anchor = "w"
-        else:
-            self.anchor = anchor
-
-        self.row = row
-        self.column = column
-        self.columnspan = columnspan
-
-        if justify is None:
-            self.justify = "left"
-        else:
-            self.justify = justify
-
-        if frame is None:
-            self.frame = EasyDialogue.main_frame
-        else:
-            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
-                frame = frame.object
-                self.frame = frame
-            else:
-                self.frame = frame
 
         self.string_var = tk.StringVar()
         self.string_var.set(text if text is not None else "")
@@ -614,50 +471,12 @@ class EasyFileDialogue(EasyWidget):
 
     def __init__(self, EasyDialogue, type="file", text=None, initialdir=os.getcwd(), filetypes=(), default_value=None, width=None, height=None, label_width=None, row=None, column=None, columnspan=1, frame=None, anchor=None, justify=None, add_to_grid=True):
 
-        self.EasyDialogue = EasyDialogue
+        EasyWidget.__init__(self)
+        self.assign_values(EasyDialogue, locals())
 
-        #TODO: refactoring mit assign_values-Methode
         if text is None:
             raise ValueError("Keyword argument 'text' must be set!")
 
-        if width is None:
-            self.width = EasyDialogue.width * columnspan
-        else:
-            self.width = width
-
-        if height is not None:
-            self.height = height
-
-        if anchor is None:
-            self.anchor = "w"
-        else:
-            self.anchor = anchor
-
-        self.row = row
-        self.column = column
-        self.columnspan = columnspan
-        self.type = type
-
-        if justify is None:
-            self.justify = "left"
-        else:
-            self.justify = justify
-
-        if label_width is None:
-            self.label_width = EasyDialogue.label_width
-        else:
-            self.label_width = label_width
-
-        if frame is None:
-            self.frame = EasyDialogue.main_frame
-        else:
-            if isinstance(frame, EasyLabelFrame) or isinstance(frame, EasyFrame):
-                frame = frame.object
-                self.frame = frame
-            else:
-                self.frame = frame
-
-        EasyWidget.__init__(self)
         self.grid_object = tkinter.Frame(self.frame, width=self.width, height=self.height, background=self.background_color)
         # label = tk.Message(self.grid_object, text=text, background=self.background_color, font=(self.font, self.fontsize))
         self.string_var = tk.StringVar()
@@ -723,11 +542,6 @@ class EasyFileDialogue(EasyWidget):
 
         self.object.config(background=background_color)
 
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
 
     def set(self, new_value: str) -> None:
         if isinstance(new_value, str):
@@ -738,6 +552,7 @@ class EasyFileDialogue(EasyWidget):
             self.object.xview_moveto(1)
         else:
             raise TypeError(f"\n\nNeuer Wert muss ein String sein!\nAktueller Typ: {type(new_value)}\n\n")
+
 
     def get(self) -> str:
         return self.object_string_var.get()
@@ -767,12 +582,6 @@ class EasyImage(EasyWidget):
         self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
         if add_to_grid == False:
             self.remove_from_grid()
-
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
 
 
 class EasyEntry(EasyWidget):
@@ -805,19 +614,15 @@ class EasyEntry(EasyWidget):
         self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
         if add_to_grid == False:
             self.remove_from_grid()
-
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
         
+
     def set(self, new_value) -> None:
         if isinstance(new_value, str):
             self.object.delete(0, tk.END)
             self.object.insert(0, new_value)
             self.object.xview_moveto(1)
             
+
     def get(self) -> str:
         return self.object.get()
 
@@ -856,14 +661,10 @@ class EasyCombobox(EasyWidget):
         if not add_to_grid:
             self.remove_from_grid()
 
-    def add_to_grid(self):
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self):
-        self.grid_object.grid_remove()
 
     def set(self, new_value) -> None:
         self.object.set(new_value)
+
 
     def get(self) -> str:
         return self.object.get()
@@ -897,16 +698,12 @@ class EasyCheckbutton(EasyWidget):
         self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
         if add_to_grid == False:
             self.remove_from_grid()
-
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
         
+
     def get(self):
         return self.object_var.get()
         
+
     def set(self, new_value):
         if new_value == True:
             new_value = 1
@@ -940,11 +737,6 @@ class EasyText(EasyWidget):
         if add_to_grid == False:
             self.remove_from_grid()
 
-    def add_to_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.insert_into_grid(self.grid_object, self.frame, self.row, self.column, self.columnspan)
-
-    def remove_from_grid(self, *obsolete): # *obsolete argument can be deleted in the future
-        self.grid_object.grid_remove()
 
     def set(self, new_value) -> None:
         if isinstance(new_value, str):
@@ -952,6 +744,7 @@ class EasyText(EasyWidget):
             self.object.insert(1.0, new_value)
             self.object.xview_moveto(1)
             
+
     def get(self) -> str:
         return self.object.get("1.0", "end-1c")
 
@@ -1004,9 +797,9 @@ class EasySelectionFalseButtons(EasyWidget):
 
         self.none_frame = tkinter.Frame(self.grid_object, width=self.width/2, height=self.height, background=self.background_color)
         if len(EasyDialogue.false_text) < 13:
-            self.none_button = tk.Button(self.none_frame, text=EasyDialogue.false_text, width=10, command=EasyDialogue.no_clicked, background=self.background_color, font=(EasyDialogue.font, EasyDialogue.fontsize))
+            self.none_button = tk.Button(self.none_frame, text=EasyDialogue.false_text, width=10, height=self.height, command=EasyDialogue.no_clicked, background=self.background_color, font=(EasyDialogue.font, EasyDialogue.fontsize))
         else:
-            self.none_button = tk.Button(self.none_frame, text=EasyDialogue.false_text, command=EasyDialogue.no_clicked, background=self.background_color, font=(EasyDialogue.font, EasyDialogue.fontsize))
+            self.none_button = tk.Button(self.none_frame, text=EasyDialogue.false_text, height=self.height, command=EasyDialogue.no_clicked, background=self.background_color, font=(EasyDialogue.font, EasyDialogue.fontsize))
         # self.no_button.grid(row=0, column=1, padx=self.padx, pady=self.pady)
         self.none_button.pack(side="left", fill="both")
         EasyDialogue.select_none_buttons.append(self.none_button)
@@ -1015,6 +808,7 @@ class EasySelectionFalseButtons(EasyWidget):
         self.none_frame.pack_propagate(False)
 
         self.grid_object.grid_propagate(True)
+        self.grid_object.grid_propagate(False)
         self.grid_object.rowconfigure(0, weight=1)
         self.grid_object.columnconfigure(0, weight=1)
         self.grid_object.columnconfigure(1, weight=1)

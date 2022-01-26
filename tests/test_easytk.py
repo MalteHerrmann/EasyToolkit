@@ -1,6 +1,8 @@
-"""test_easytk | Malte Herrmann
+"""
+test_easytk | Malte Herrmann
 
-Unit testing module for the EasyToolkit."""
+Unit testing module for the EasyToolkit.
+"""
 
 import os
 import unittest
